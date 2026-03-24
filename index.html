@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GovBot - AI Helpdesk</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-blue: #003DA5;
+            --light-blue: #0066FF;
+            --accent-blue: #1E88E5;
+            --bg-light: #F5F7FA;
+            --white: #FFFFFF;
+            --text-dark: #1A1A1A;
+            --text-light: #666666;
+            --success-green: #28A745;
+            --warning-orange: #FF8C00;
+            --shadow: 0 2px 12px rgba(0, 61, 165, 0.1);
+            --shadow-hover: 0 4px 20px rgba(0, 61, 165, 0.15);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg-light);
+            color: var(--text-dark);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 500px;
+            height: 100vh;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            background: var(--white);
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+
+        /* ==== WELCOME SCREEN ==== */
+        .welcome-screen {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 20px;
+            text-align: center;
+            background: linear-gradient(135deg, var(--primary-blue), var(--accent-blue));
+            color: var(--white);
+            min-height: 100vh;
+        }
+
+        .welcome-screen.hidden {
+            display: none;
+        }
+
+        .welcome-logo {
+            font-size: 64px;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .welcome-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            line-height: 1.3;
+        }
+
+        .welcome-subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-bottom: 60px;
+            line-height: 1.5;
+        }
+
+        .language-selection {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .lang-btn {
+            padding: 12px 30px;
+            font-size: 16px;
+            border: 2px solid var(--white);
+            background: transparent;
+            color: var(--white);
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .lang-btn:hover, .lang-btn.active {
+            background: var(--white);
+            color: var(--primary-blue);
+            transform: scale(1.05);
+        }
+
+        /* ==== HEADER ==== */
+        .header {
+            background: linear-gradient(135deg, var(--primary-blue), var(--accent-blue));
+            color: var(--white);
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow);
+        }
+
+        .header.hidden {
+            display: none;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            background: var(--success-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .header-icons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .icon-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: var(--white);
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 20px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .profile-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+        }
+
+        /* ==== MESSAGES CONTAINER ==== */
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            background: var(--bg-light);
+        }
+
+        .messages-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .messages-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb {
+            background: rgba(0, 61, 165, 0.3);
+            border-radius: 3px;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 61, 165, 0.5);
+        }
+
+        /* Chat Bubbles */
+        .message {
+            display: flex;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.bot {
+            justify-content: flex-start;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .bubble {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            word-wrap: break-word;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .message.bot .bubble {
+            background: var(--white);
+            color: var(--text-dark);
+            border-left: 3px solid var(--light-blue);
+        }
+
+        .message.user .bubble {
+            background: var(--light-blue);
+            color: var(--white);
+        }
+
+        .timestamp {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-top: 4px;
+            text-align: center;
+        }
+
+        /* Notification */
+        .notification {
+            background: var(--success-green);
+            color: var(--white);
+            padding: 12px 16px;
+            border-radius: 16px;
+            text-align: center;
+            font-weight: 600;
+            animation: slideDown 0.4s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* ==== MENU BUTTONS ==== */
+        .menu-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 10px 0;
+        }
+
+        .menu-btn {
+            padding: 16px 12px;
+            background: var(--white);
+            border: 2px solid var(--primary-blue);
+            color: var(--primary-blue);
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            text-align: center;
+            line-height: 1.3;
+        }
+
+        .menu-btn:hover {
+            background: var(--primary-blue);
+            color: var(--white);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .menu-btn span {
+            display: block;
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        /* ==== SALARY STATUS DETAILED VIEW ==== */
+        .salary-details {
+            background: var(--white);
+            padding: 16px;
+            border-radius: 12px;
+            margin: 8px 0;
+            border-left: 4px solid var(--success-green);
+        }
+
+        .salary-detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--bg-light);
+            font-size: 14px;
+        }
+
+        .salary-detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        .detail-value {
+            color: var(--text-dark);
+            font-weight: 700;
+        }
+
+        /* ==== ACTION BUTTONS ==== */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 12px 0;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 12px 16px;
+            background: var(--primary-blue);
+            color: var(--white);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            background: var(--accent-blue);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .action-btn.secondary {
+            background: var(--bg-light);
+            color: var(--primary-blue);
+            border: 2px solid var(--primary-blue);
+        }
+
+        .action-btn.secondary:hover {
+            background: var(--primary-blue);
+            color: var(--white);
+        }
+
+        /* ==== INPUT AREA ==== */
+        .input-area {
+            padding: 16px;
+            background: var(--white);
+            border-top: 1px solid #E5E5E5;
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .input-area.hidden {
+            display: none;
+        }
+
+        .voice-btn {
+            width: 44px;
+            height: 44px;
+            background: var(--accent-blue);
+            color: var(--white);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .voice-btn:hover {
+            background: var(--light-blue);
+            transform: scale(1.1);
+        }
+
+        .voice-btn.recording {
+            animation: pulse-record 1s infinite;
+            background: var(--warning-orange);
+        }
+
+        @keyframes pulse-record {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 140, 0, 0.7); }
+            50% { box-shadow: 0 0 0 10px rgba(255, 140, 0, 0); }
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid var(--bg-light);
+            border-radius: 20px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--light-blue);
+            box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+        }
+
+        .send-btn {
+            width: 44px;
+            height: 44px;
+            background: var(--light-blue);
+            color: var(--white);
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .send-btn:hover {
+            background: var(--accent-blue);
+            transform: scale(1.1);
+        }
+
+        /* ==== MODAL/DIALOG ==== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: var(--white);
+            padding: 30px;
+            border-radius: 16px;
+            max-width: 400px;
+            text-align: center;
+            animation: popIn 0.3s ease;
+        }
+
+        @keyframes popIn {
+            from {
+                transform: scale(0.95);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .modal-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--text-dark);
+        }
+
+        .modal-text {
+            font-size: 14px;
+            color: var(--text-light);
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        .modal-ticket {
+            background: var(--bg-light);
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            font-weight: 700;
+            font-size: 16px;
+            color: var(--primary-blue);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .modal-buttons .confirm {
+            background: var(--success-green);
+            color: var(--white);
+        }
+
+        .modal-buttons .confirm:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .modal-buttons .cancel {
+            background: var(--bg-light);
+            color: var(--primary-blue);
+            border: 2px solid var(--primary-blue);
+        }
+
+        .modal-buttons .cancel:hover {
+            background: var(--primary-blue);
+            color: var(--white);
+        }
+
+        /* ==== ADMIN DASHBOARD ==== */
+        .admin-dashboard {
+            display: none;
+            flex-direction: column;
+            padding: 20px;
+            background: var(--bg-light);
+            overflow-y: auto;
+        }
+
+        .admin-dashboard.active {
+            display: flex;
+        }
+
+        .admin-header {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-blue);
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--white);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .stat-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary-blue);
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        .alerts-section {
+            background: var(--white);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+        }
+
+        .alerts-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 12px;
+        }
+
+        .alert-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px;
+            background: var(--bg-light);
+            border-radius: 8px;
+            border-left: 4px solid var(--warning-orange);
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .alert-icon {
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        /* ==== RESPONSIVE ==== */
+        @media (max-width: 480px) {
+            .container {
+                max-width: 100%;
+                height: 100vh;
+                border-radius: 0;
+            }
+
+            .menu-container {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .stat-card {
+                padding: 16px;
+            }
+        }
+
+        /* Scrollbar styling for chat */
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- WELCOME SCREEN -->
+        <div class="welcome-screen" id="welcomeScreen">
+            <div class="welcome-logo">🤖</div>
+            <h1 class="welcome-title">Welcome to GovBot 👋</h1>
+            <p class="welcome-subtitle">Your AI Helpdesk for Government Services</p>
+            <div class="language-selection">
+                <button class="lang-btn active" onclick="selectLanguage('en')">English</button>
+                <button class="lang-btn" onclick="selectLanguage('kn')">ಕನ್ನಡ</button>
+            </div>
+        </div>
+
+        <!-- HEADER -->
+        <div class="header" id="header">
+            <div class="header-title">
+                <span>🤖 GovBot</span>
+                <div class="status-indicator"></div>
+                <span style="font-size: 12px; opacity: 0.8;">Connected</span>
+            </div>
+            <div class="profile-badge" id="profileBadge">
+                <span>👤 Emp ID: 4521</span>
+            </div>
+            <div class="header-icons">
+                <button class="icon-btn" onclick="toggleAdminDashboard()"title="Admin Dashboard">📊</button>
+                <button class="icon-btn" onclick="resetChat()" title="New Chat">🔄</button>
+            </div>
+        </div>
+
+        <!-- MESSAGES CONTAINER -->
+        <div class="messages-container" id="messagesContainer"></div>
+
+        <!-- ADMIN DASHBOARD -->
+        <div class="admin-dashboard" id="adminDashboard">
+            <div class="admin-header">📊 Admin Dashboard</div>
+            <div class="dashboard-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📞</div>
+                    <div class="stat-value">247</div>
+                    <div class="stat-label">Queries Today</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⏱️</div>
+                    <div class="stat-value">2.3 min</div>
+                    <div class="stat-label">Avg Response</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-value">94%</div>
+                    <div class="stat-label">Resolution Rate</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-value">1,843</div>
+                    <div class="stat-label">Active Users</div>
+                </div>
+            </div>
+
+            <div class="alerts-section">
+                <div class="alerts-title">🚨 Active Alerts</div>
+                <div class="alert-item">
+                    <div class="alert-icon">⚠️</div>
+                    <div>
+                        <strong>High Salary Delay Complaints</strong><br>
+                        <small>45% increase in complaints (45 reports)</small>
+                    </div>
+                </div>
+                <div class="alert-item">
+                    <div class="alert-icon">📈</div>
+                    <div>
+                        <strong>Most Common Issue: Salary Processing Delays</strong><br>
+                        <small>67 queries out of 247 today</small>
+                    </div>
+                </div>
+                <div class="alert-item">
+                    <div class="alert-icon">⏰</div>
+                    <div>
+                        <strong>Escalation Queue Building</strong><br>
+                        <small>18 pending escalations to Accounts Dept</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- INPUT AREA -->
+        <div class="input-area" id="inputArea">
+            <button class="voice-btn" id="voiceBtn" onclick="toggleVoiceInput()" title="Voice Input">🎤</button>
+            <input type="text" class="input-field" id="messageInput" placeholder="Ask me anything..." onkeypress="handleKeyPress(event)">
+            <button class="send-btn" onclick="sendMessage()" title="Send">➤</button>
+        </div>
+    </div>
+
+    <!-- ESCALATION MODAL -->
+    <div class="modal" id="escalationModal">
+        <div class="modal-content">
+            <div class="modal-icon">✅</div>
+            <div class="modal-title">Request Escalated</div>
+            <div class="modal-text">Your request has been forwarded to the Accounts Department.</div>
+            <div class="modal-ticket">Ticket ID: #456</div>
+            <div class="modal-text" style="font-size: 13px; color: var(--success-green); font-weight: 600;">You will be notified shortly</div>
+            <div class="modal-buttons">
+                <button class="confirm" onclick="closeModal()">Okay</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let currentLanguage = 'en';
+        let chatStarted = false;
+        let isVoiceRecording = false;
+        let currentMenu = null;
+        
+        const messages = {
+            en: {
+                welcome: "Hi 👋 Welcome to GovBot! How can I help you today?",
+                mainMenu: "Please select what you need:",
+                salaryStatus: "Salary Status 💰",
+                pensionQuery: "Pension / OPS Query 🧾",
+                leaveRequest: "Leave Request 📄",
+                fileTracking: "File Tracking 📂",
+                salaryMessage: "Your salary is processed. Expected by 15th.\n\nTrack ID: 123",
+                escalate: "Escalate to Department",
+                backToMenu: "Back to Menu",
+                voiceInput: "🎤 Listening...",
+                salarySuccess: "✅ Salary credited successfully"
+            },
+            kn: {
+                welcome: "ನಮಸ್ಕಾರ 👋 GovBot ಗೆ ಸ್ವಾಗತ! ನಾನು ಈ ಹೆಸರಿನಲ್ಲಿ ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?",
+                mainMenu: "ನೀವು ಯಾವುದು ಬಯಸುತ್ತೀರಿ ಆಯ್ಕೆ ಮಾಡಿ:",
+                salaryStatus: "ಸಂಬಳ ಸ್ಥಿತಿ 💰",
+                pensionQuery: "ಪೆನ್ಷನ್ / OPS ಪ್ರಶ್ನೆ 🧾",
+                leaveRequest: "ರಜೆ ವಿನಂತಿ 📄",
+                fileTracking: "ಫೈಲ್ ಟ್ರ್ಯಾಕಿಂಗ್ 📂",
+                salaryMessage: "ನಿಮ್ಮ ಸಂಬಳ ಪ್ರಕ್ರಿಯೆಗೊಂಡಿದೆ. 15 ನೇ ತಿಕೆ ನಿರೀಕ್ಷಿತವಾಗಿದೆ.\n\nಟ್ರ್ಯಾಕ್ ID: 123",
+                escalate: "ವಿಭಾಗಕ್ಕೆ ಎತ್ತರಿಸಿ",
+                backToMenu: "ಮೆನುವಿಗೆ ಹಿಂತಿರುಗಿ",
+                voiceInput: "🎤 ಆಲಿಸುತ್ತಿದೆ...",
+                salarySuccess: "✅ ಸಂಬಳ ಸಾಕ್ಷಿ ಯಶಸ್ವಿ"
+            }
+        };
+
+        // DOM Elements
+        const welcomeScreen = document.getElementById('welcomeScreen');
+        const header = document.getElementById('header');
+        const messagesContainer = document.getElementById('messagesContainer');
+        const inputArea = document.getElementById('inputArea');
+        const messageInput = document.getElementById('messageInput');
+        const adminDashboard = document.getElementById('adminDashboard');
+        const escalationModal = document.getElementById('escalationModal');
+        const voiceBtn = document.getElementById('voiceBtn');
+
+        function selectLanguage(lang) {
+            currentLanguage = lang;
+            document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            setTimeout(() => {
+                startChat();
+            }, 300);
+        }
+
+        function startChat() {
+            chatStarted = true;
+            welcomeScreen.classList.add('hidden');
+            header.classList.remove('hidden');
+            inputArea.classList.remove('hidden');
+            messagesContainer.innerHTML = '';
+            
+            addBotMessage(messages[currentLanguage].welcome);
+            setTimeout(() => showMainMenu(), 800);
+        }
+
+        function addBotMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message bot';
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.textContent = text;
+            
+            messageDiv.appendChild(bubble);
+            
+            const timestamp = document.createElement('div');
+            timestamp.className = 'timestamp';
+            timestamp.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            messageDiv.appendChild(timestamp);
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function addUserMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message user';
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.textContent = text;
+            
+            messageDiv.appendChild(bubble);
+            
+            const timestamp = document.createElement('div');
+            timestamp.className = 'timestamp';
+            timestamp.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            messageDiv.appendChild(timestamp);
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function showMainMenu() {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message bot';
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            
+            const title = document.createElement('div');
+            title.style.marginBottom = '12px';
+            title.style.fontWeight = '600';
+            title.textContent = messages[currentLanguage].mainMenu;
+            bubble.appendChild(title);
+            
+            const menuContainer = document.createElement('div');
+            menuContainer.className = 'menu-container';
+            
+            const options = [
+                { key: 'salaryStatus', label: messages[currentLanguage].salaryStatus },
+                { key: 'pensionQuery', label: messages[currentLanguage].pensionQuery },
+                { key: 'leaveRequest', label: messages[currentLanguage].leaveRequest },
+                { key: 'fileTracking', label: messages[currentLanguage].fileTracking }
+            ];
+            
+            options.forEach(option => {
+                const btn = document.createElement('button');
+                btn.className = 'menu-btn';
+                btn.innerHTML = option.label;
+                btn.onclick = () => handleMenuSelection(option.key, option.label);
+                menuContainer.appendChild(btn);
+            });
+            
+            bubble.appendChild(menuContainer);
+            messageDiv.appendChild(bubble);
+            
+            const timestamp = document.createElement('div');
+            timestamp.className = 'timestamp';
+            timestamp.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            messageDiv.appendChild(timestamp);
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            currentMenu = 'main';
+        }
+
+        function handleMenuSelection(key, label) {
+            addUserMessage(label);
+            
+            if (key === 'salaryStatus') {
+                setTimeout(() => {
+                    handleSalaryQuery();
+                }, 600);
+            } else if (key === 'pensionQuery') {
+                setTimeout(() => {
+                    handlePensionQuery();
+                }, 600);
+            } else if (key === 'leaveRequest') {
+                setTimeout(() => {
+                    handleLeaveQuery();
+                }, 600);
+            } else if (key === 'fileTracking') {
+                setTimeout(() => {
+                    handleFileQuery();
+                }, 600);
+            }
+        }
+
+        function showSalaryStatus() {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message bot';
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            
+            // Salary info part
+            const infoDiv = document.createElement('div');
+            infoDiv.textContent = messages[currentLanguage].salaryMessage;
+            infoDiv.style.marginBottom = '12px';
+            bubble.appendChild(infoDiv);
+            
+            // Salary details card
+            const detailsCard = document.createElement('div');
+            detailsCard.className = 'salary-details';
+            
+            const details = [
+                { label: 'Salary Month', value: 'March 2026' },
+                { label: 'Status', value: 'Processed' },
+                { label: 'Amount', value: '₹45,000' },
+                { label: 'Expected Date', value: '15th March' }
+            ];
+            
+            details.forEach(detail => {
+                const row = document.createElement('div');
+                row.className = 'salary-detail-row';
+                row.innerHTML = `
+                    <span class="detail-label">${detail.label}</span>
+                    <span class="detail-value">${detail.value}</span>
+                `;
+                detailsCard.appendChild(row);
+            });
+            
+            bubble.appendChild(detailsCard);
+            
+            // Action buttons
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'action-buttons';
+            
+            const escalateBtn = document.createElement('button');
+            escalateBtn.className = 'action-btn';
+            escalateBtn.textContent = messages[currentLanguage].escalate;
+            escalateBtn.onclick = () => handleEscalate();
+            
+            const backBtn = document.createElement('button');
+            backBtn.className = 'action-btn secondary';
+            backBtn.textContent = messages[currentLanguage].backToMenu;
+            backBtn.onclick = () => {
+                addUserMessage(messages[currentLanguage].backToMenu);
+                setTimeout(() => showMainMenu(), 600);
+            };
+            
+            buttonContainer.appendChild(escalateBtn);
+            buttonContainer.appendChild(backBtn);
+            bubble.appendChild(buttonContainer);
+            
+            messageDiv.appendChild(bubble);
+            
+            const timestamp = document.createElement('div');
+            timestamp.className = 'timestamp';
+            timestamp.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            messageDiv.appendChild(timestamp);
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            currentMenu = 'salary';
+        }
+
+        function handleEscalate() {
+            addUserMessage(messages[currentLanguage].escalate);
+            setTimeout(() => {
+                openEscalationModal();
+            }, 600);
+        }
+
+        function openEscalationModal() {
+            escalationModal.classList.add('active');
+        }
+
+        function closeModal() {
+            escalationModal.classList.remove('active');
+            addBotMessage("Your escalation has been recorded. A ticket (#456) has been created. You can track your request using this ID. Is there anything else I can help you with?");
+            setTimeout(() => showMainMenu(), 1000);
+        }
+
+        function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text) return;
+            
+            messageInput.value = '';
+            addUserMessage(text);
+            
+            // Simulate bot response with keyword detection
+            setTimeout(() => {
+                const lowerText = text.toLowerCase();
+                
+                if (lowerText.includes('menu') || lowerText.includes('home')) {
+                    showMainMenu();
+                } else if (
+                    lowerText.includes('salary') || 
+                    lowerText.includes('pay') || 
+                    lowerText.includes('arrears') ||
+                    lowerText.includes('payment') ||
+                    lowerText.includes('remuneration')
+                ) {
+                    handleSalaryQuery();
+                } else if (
+                    lowerText.includes('pension') || 
+                    lowerText.includes('ops') ||
+                    lowerText.includes('retirement')
+                ) {
+                    handlePensionQuery();
+                } else if (
+                    lowerText.includes('leave') ||
+                    lowerText.includes('vacation') ||
+                    lowerText.includes('time off') ||
+                    lowerText.includes('absent')
+                ) {
+                    handleLeaveQuery();
+                } else if (
+                    lowerText.includes('file') ||
+                    lowerText.includes('status') ||
+                    lowerText.includes('track') ||
+                    lowerText.includes('document') ||
+                    lowerText.includes('request')
+                ) {
+                    handleFileQuery();
+                } else {
+                    handleUnknownQuery();
+                }
+            }, 800);
+        }
+
+        function handleSalaryQuery() {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message bot';
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            
+            // Response text
+            const responseDiv = document.createElement('div');
+            responseDiv.textContent = "Your salary is processed. Expected by 15th.\n\nTrack ID: 123";
+            responseDiv.style.marginBottom = '12px';
+            bubble.appendChild(responseDiv);
+            
+            // Action buttons
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'action-buttons';
+            
+            const escalateBtn = document.createElement('button');
+            escalateBtn.className = 'action-btn';
+            escalateBtn.textContent = 'Escalate to Department';
+            escalateBtn.onclick = () => handleEscalate();
+            
+            const backBtn = document.createElement('button');
+            backBtn.className = 'action-btn secondary';
+            backBtn.textContent = 'Back to Menu';
+            backBtn.onclick = () => {
+                addUserMessage('Back to Menu');
+                setTimeout(() => showMainMenu(), 600);
+            };
+            
+            buttonContainer.appendChild(escalateBtn);
+            buttonContainer.appendChild(backBtn);
+            bubble.appendChild(buttonContainer);
+            
+            messageDiv.appendChild(bubble);
+            
+            const timestamp = document.createElement('div');
+            timestamp.className = 'timestamp';
+            timestamp.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            messageDiv.appendChild(timestamp);
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function handlePensionQuery() {
+            addBotMessage("Your pension request is under review. Expected update within 5 working days.\n\nReference ID: 789");
+            setTimeout(() => showMainMenu(), 1200);
+        }
+
+        function handleLeaveQuery() {
+            addBotMessage("You have 10 leave days remaining. Do you want to apply for leave?");
+            setTimeout(() => showMainMenu(), 1200);
+        }
+
+        function handleFileQuery() {
+            addBotMessage("Your file is currently in Accounts Department.\n\nStatus: In Progress\nFile ID: 456");
+            setTimeout(() => showMainMenu(), 1200);
+        }
+
+        function handleUnknownQuery() {
+            addBotMessage("I'm sorry, I didn't understand that. Please select an option below or type keywords like salary, pension, leave, or file.");
+            setTimeout(() => showMainMenu(), 1200);
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        function toggleVoiceInput() {
+            isVoiceRecording = !isVoiceRecording;
+            voiceBtn.classList.toggle('recording', isVoiceRecording);
+            voiceBtn.textContent = isVoiceRecording ? '🎧' : '🎤';
+            
+            if (isVoiceRecording) {
+                // Simulate voice recording
+                setTimeout(() => {
+                    isVoiceRecording = false;
+                    voiceBtn.classList.remove('recording');
+                    voiceBtn.textContent = '🎤';
+                    const voiceMessage = "What is my salary status?";
+                    addUserMessage(voiceMessage);
+                    setTimeout(() => {
+                        handleSalaryQuery();
+                    }, 600);
+                }, 3000);
+            }
+        }
+
+        function toggleAdminDashboard() {
+            const isActive = adminDashboard.classList.contains('active');
+            adminDashboard.classList.toggle('active', !isActive);
+            messagesContainer.classList.toggle('hidden', !isActive);
+            inputArea.classList.toggle('hidden', !isActive);
+        }
+
+        function resetChat() {
+            if (confirm('Start a new conversation?')) {
+                chatStarted = false;
+                currentMenu = null;
+                welcomeScreen.classList.remove('hidden');
+                header.classList.add('hidden');
+                inputArea.classList.add('hidden');
+                messagesContainer.innerHTML = '';
+                adminDashboard.classList.remove('active');
+                messageInput.value = '';
+                
+                document.querySelectorAll('.lang-btn').forEach((btn, index) => {
+                    if (index === 0) btn.classList.add('active');
+                    else btn.classList.remove('active');
+                });
+            }
+        }
+
+        // Show notification example on load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const notif = document.createElement('div');
+                notif.className = 'notification';
+                notif.style.position = 'fixed';
+                notif.style.top = '20px';
+                notif.style.left = '50%';
+                notif.style.transform = 'translateX(-50%)';
+                notif.style.zIndex = '999';
+                notif.textContent = "Salary credited successfully ✅";
+                document.body.appendChild(notif);
+                
+                setTimeout(() => {
+                    notif.style.animation = 'slideUp 0.4s ease';
+                    setTimeout(() => notif.remove(), 400);
+                }, 3000);
+            }, 5000);
+        });
+
+        // Add slideUp animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideUp {
+                from { transform: translateX(-50%) translateY(0); opacity: 1; }
+                to { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
